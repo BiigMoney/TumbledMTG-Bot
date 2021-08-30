@@ -69,8 +69,6 @@ async def checkToStartWeekly():
                             else:
                                 print(r.json())
                     except Exception as e:
-                        print(type(e))
-                        print(e.args)
                         print(e)
                         await channel.send("Something went wrong when uploading player decklists. Idk what to do, everything is broken, someone please help I can't do this on my own.")
                         return
@@ -453,7 +451,6 @@ async def newtournament(ctx, arg):
                 updateJSON()
                 await ctx.send("Tournament started with name " + tourney["name"] +", scheduled for " + str(tourney['start_at']))
             except Exception as e:
-                print(e)
                 tournament_data['main'] = None
                 updateJSON()
                 await ctx.send("Failed, likely a challonge error.")
@@ -474,18 +471,15 @@ async def registertourney(ctx, *, args):
         if challonge_tourney['started_at'] == None:
             body = decklistRequest((str(challonge_tourney['start_at'])[0:10] + " Weekly Decklist"),
                                               str(ctx.author).split("#")[0], decklist).__dict__
-            print(body)
             r = requests.post('https://us-central1-tumbledmtg-website.cloudfunctions.net/api/testdecklist',
                               json=body)
             if 'errors' in r.json():
-                print(r.json())
                 await ctx.send("Invalid decklist: " +r.json()['errors'])
                 return
             elif 'success' in r.json():
                 await ctx.send("Decklist is valid!")
             else:
                 await ctx.send("Server error, I think... you have not been registered, try again maybe? If this happens more than once then call for help.")
-                print(r.json())
                 return
             try:
                 challonge.participants.create(challonge_tourney['id'], str(ctx.author))
@@ -540,14 +534,12 @@ async def registerweekly(ctx, *, args):
                     r = requests.post('https://us-central1-tumbledmtg-website.cloudfunctions.net/api/testdecklist',
                                     json=body)
                     if 'errors' in r.json():
-                        print(r.json())
                         await ctx.send("Invalid decklist: " + str(r.json()['errors']))
                         return
                     elif 'success' in r.json():
                         await ctx.send("Decklist is valid!")
                     else:
                         await ctx.send("Server error, I think... you have not been registered, try again maybe? If this happens more than once then call for help.")
-                        print(r.json())
                         return
                 try:
                     for player in tourney['players']:
@@ -639,7 +631,6 @@ async def DQweekly(ctx):
                         p2id = match['player1_id']
                         score = "69-0"
                     if not (p2id == None or p2id == 0):
-                        print(p2id)
                         challonge.matches.update(challonge_tourney['id'],match['id'],score_cv=score,winner_id=p2id)
                         await ctx.send("You have been DQ'd")
                         return
