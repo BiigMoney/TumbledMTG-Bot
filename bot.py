@@ -65,7 +65,7 @@ async def checkToStartWeekly():
                             r = requests.post('https://us-central1-tumbledmtg-website.cloudfunctions.net/api/decklistAdmin', json=body)
                             if 'decklist' in r.json():
                                 print(r.json())
-                                player['decklist'] = "https://tumbledmtg.com/decklist=" + str(r.json()['decklist']['decklistId'])
+                                player['decklist'] = "https://tumbledmtg.com/decklist=" + str(r.json()['decklist']['id'])
                             else:
                                 print(r.json())
                     except Exception as e:
@@ -125,7 +125,7 @@ async def checkToEndWeekly():
                 tournament_data['weekly'] = Tournament(new_challonge_tourney['full_challonge_url']).__dict__
                 updateJSON()
                 await channel.send("The next weekly has been created. DM me '-registerweekly (decklist)' before Friday at 6pm PST to sign up, replacing (decklist) with the decklist you want to use for the tournament. You can find the bracket at " + new_challonge_tourney['full_challonge_url'])
-                second_channel = client.get_channel(209040539339849729)
+                second_channel = client.get_channel(893187384915669003)
                 await second_channel.send("""Join the TumbledMTG weekly tournament!
 Deadline to submit a decklist: Friday at 6pm (PST)
 
@@ -145,6 +145,7 @@ async def callMatches(tourney):
         challonge_tourney = challonge.tournaments.show(url)
         matches = challonge.matches.index(challonge_tourney['id'])
         for match in matches:
+            print(match)
             if match['player1_id'] == None or match['player2_id'] == None:
                 continue
             if match['underway_at'] == None:
@@ -156,7 +157,7 @@ async def callMatches(tourney):
                     player2 = str(challonge.participants.show(challonge_tourney['id'],match['player2_id'])['name'])
                     await channel.send(guild.get_member_named(player1).mention + guild.get_member_named(player2).mention + " you two have a match!")
                 except:
-                    await channel.send("A match has started but one of the players was not found in this discord.")
+                    await channel.send("A match has started, but there was an error getting one of the players..")
 
 @tasks.loop(minutes=5.0)
 async def called_once_a_min():
@@ -386,10 +387,10 @@ async def on_message(message):
         for c in cards:
             if (card_name.lower() in c.find('name').text.lower()) or (c.find('related') != None and card_name.lower() in c.find('related').text.lower()):
                 lol = True
-                card_file = "./TumbledMTG-Cockatrice/data/pics/CUSTOM/" + c.find('name').text + ".jpg"
+                card_file = "./TumbledMTG-Cockatrice/data/pics/CUSTOM/" + c.find('name').text + ".png"
                 await message.channel.send(file=discord.File(card_file))
                 if c.find('related') != None:
-                    card_file = "./TumbledMTG-Cockatrice/data/pics/CUSTOM/" + c.find('related').text + ".jpg"
+                    card_file = "./TumbledMTG-Cockatrice/data/pics/CUSTOM/" + c.find('related').text + ".png"
                     await message.channel.send(file=discord.File(card_file))
                 break
         if lol == False:
@@ -644,7 +645,7 @@ async def resetpassword(ctx, username, new_password):
     data = {
         "id": str(ctx.author.id),
         "username": username,
-        "new_password": new_password,
+        "newPassword": new_password,
         "password": password
     }
     r = requests.post("https://us-central1-tumbledmtg-website.cloudfunctions.net/api/resetPassword", json=data)
