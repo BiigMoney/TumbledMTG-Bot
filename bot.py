@@ -76,7 +76,7 @@ async def checkToStartWeekly():
                     challonge.tournaments.update(challonge_tourney['id'], description=json.dumps(tourney['players']))
                     challonge.participants.randomize(challonge_tourney['id'])
                     challonge.tournaments.start(challonge_tourney['id'])
-                    await channel.send("The weekly tournament is starting! Decklists have been uploaded.")
+                    await channel.send("The weekly tournament is starting! Decklists have been uploaded.\n<"+tournament_data["weekly"]["link"]+">")
 
 async def checkToEndWeekly():
     star_data = [{"place": 1, "count" : 3}, {"place": 1, "count" : 5},{"place": 2, "count" : 6},{"place": 1, "count" : 7},{"place": 2, "count" : 8},{"place": 3, "count" : 10},{"place": 1, "count" : 12},{"place": 2, "count" : 14},{"place": 3, "count" : 16},{"place": 5, "count" : 18}]
@@ -86,8 +86,10 @@ async def checkToEndWeekly():
     hour = datetime.now().hour
     if tourney != None:
         challonge_tourney = challonge.tournaments.show(tourney['link'].rsplit('/', 1)[-1])
-        if challonge_tourney['progress_meter'] == 100:
+        progress = challonge_tourney['progress_meter']
+        if progress == 100:
             challonge.tournaments.finalize(challonge_tourney['id'])
+        if progress == 100 or challonge_tourney['state'] == 'complete':
             participants = challonge.participants.index(challonge_tourney['id'])
             for i in range(len(star_data)):
                 if challonge_tourney['participants_count'] < star_data[i]['count']:
@@ -109,7 +111,7 @@ async def checkToEndWeekly():
                 for player in tourney['players']:
                     if player['name'] == participant['name']:
                         r2 = requests.post("https://us-central1-tumbledmtg-website.cloudfunctions.net/api/tourneyResults", json={"id": str(player['id']), "participants": challonge_tourney['participants_count'], "placement": participant['final_rank'], "password": password, "url": challonge_tourney["full_challonge_url"], "decklist": player['decklist'], 'date': str(challonge_tourney['start_at'])[0:10]}) 
-            await channel.send("The weekly has finished. You can see the results and decklists at https://tumbledmtg.com/tournament=" + str(challonge_tourney['id']))
+            await channel.send("The weekly has finished. You can see the results and decklists at <https://tumbledmtg.com/tournament=" + str(challonge_tourney['id'] + "> <" + tournament_data['weekly']['link'] + ">"))
             tournament_data['weekly'] = None
             updateJSON()
             big_channel = client.get_channel(326822492222128138)
@@ -214,34 +216,34 @@ async def on_message(message):
                 keywords.remove(keyword)
         if len(keywords) > 0 or len(search_words) > 0:
             for c in cards:
-                lol = True
+                found = True
                 title = c.find('name').text
                 for word in search_words:
                     if word.lower() not in title.lower():
-                        lol = False
-                if not lol:
+                        found = False
+                if not found:
                     continue
                 for i in range(len(keywords)):
                     if keywords[i] in value_keywords:
                         if values[i][0] == ">":
                             if not (c.find(keywords[i]).text > values[i][1:]):
-                                lol = False
+                                found = False
                                 break
                         elif values[i][0] == "=":
                             if not (c.find(keywords[i]).text == values[i][1:]):
-                                lol = False
+                                found = False
                                 break
                         elif values[i][0] == "<":
                             if not (c.find(keywords[i]).text < values[i][1:]):
-                                lol = False
+                                found = False
                                 break
                         else:
                             if values[i].isnumeric():
                                 if not (c.find(keywords[i]).text == values[i]):
-                                    lol = False
+                                    found = False
                                     break
                             else:
-                                lol = False
+                                found = False
                                 break
                     else:
                         try:
@@ -249,9 +251,9 @@ async def on_message(message):
                                 colors = c.find('color').text.lower()
                                 for letter in values[i].lower():
                                     if letter in colors:
-                                        lol = False
+                                        found = False
                                         break
-                                if not lol:
+                                if not found:
                                     break
                             elif keywords[i] == "c":
                                 colors = c.find('color').text.lower()
@@ -261,18 +263,18 @@ async def on_message(message):
                                             continue
                                         else:
                                             if not letter in colors:
-                                                lol = False
+                                                found = False
                                                 break
                                     if "h" in colors:
                                         break
                                     if not (len(colors) == len(values[i])) and not (colors.length == 1):
-                                        lol = False
+                                        found = False
                                     break
                                 for letter in values[i].lower():
                                     if not letter in colors:
-                                        lol = False
+                                        found = False
                                         break
-                                if not lol:
+                                if not found:
                                     break
                             elif keywords[i] == "o":
                                 text = c.find('text').text.lower()
@@ -281,91 +283,91 @@ async def on_message(message):
                                     if (inner_words.startswith("'") and inner_words.endswith("'")) or (inner_words.startswith('"') and inner_words.endswith('"')):
                                         inner_words = inner_words[2:-2]
                                         if not inner_words in text:
-                                            lol = False
+                                            found = False
                                         break
                                     else:
                                         inner_words = values[i].replace(","," ").split(" ")
                                         for word in inner_words:
                                             if not word in text:
-                                                lol = False
+                                                found = False
                                                 break
                                         break
                                 if not values[i].lower() in text:
-                                    lol = False
+                                    found = False
                                     break
                             elif keywords[i] == "-o":
                                 text = c.find('text').text.lower()
                                 if values[i].lower() in text:
-                                    lol = False
+                                    found = False
                                     break
                             elif keywords[i] == "t" or keywords[i] == "type":
                                 type = c.find('type').text.lower()
                                 if not values[i].lower() in type:
-                                    lol = False
+                                    found = False
                                     break
                             elif keywords[i] == "-t" or keywords[i] == "-type":
                                 type = c.find('type').text.lower()
                                 if values[i].lower() in type:
-                                    lol = False
+                                    found = False
                                     break
                             elif keywords[i] == "power" or keywords[i] == "p":
                                 power = c.find('pt').text
                                 power = power[0]
                                 if values[i][0] == ">":
                                     if not (power > values[i][1:]):
-                                        lol = False
+                                        found = False
                                         break
                                 elif values[i][0] == "=":
                                     if not (power == values[i][1:]):
-                                        lol = False
+                                        found = False
                                         break
                                 elif values[i][0] == "<":
                                     if not (power < values[i][1:]):
-                                        lol = False
+                                        found = False
                                         break
                                 else:
                                     if values[i].isnumeric():
                                         if not (power == values[i]):
-                                            lol = False
+                                            found = False
                                             break
                                     else:
-                                        lol = False
+                                        found = False
                                         break
                             elif keywords[i] == "toughness":
                                 toughness = c.find('pt').text
                                 toughness = toughness[2]
                                 if values[i][0] == ">":
                                     if not (toughness > values[i][1:]):
-                                        lol = False
+                                        found = False
                                         break
                                 elif values[i][0] == "=":
                                     if not (toughness == values[i][1:]):
-                                        lol = False
+                                        found = False
                                         break
                                 elif values[i][0] == "<":
                                     if not (toughness < values[i][1:]):
-                                        lol = False
+                                        found = False
                                         break
                                 else:
                                     if values[i].isnumeric():
                                         if not (toughness == values[i]):
-                                            lol = False
+                                            found = False
                                             break
                                     else:
-                                        lol = False
+                                        found = False
                                         break
                             elif keywords[i] == "is":
                                 if values[i] == "new":
                                     new = c.find('new').text
                                     if not new == "TRUE":
-                                        lol = False
+                                        found = False
                                 else:
-                                    lol = False
+                                    found = False
                         except:
-                            lol = False
+                            found = False
                             break
 
-                if not lol:
+                if not found:
                     continue
                 founds += c.find('name').text + "\n"
                 count+=1
@@ -381,18 +383,18 @@ async def on_message(message):
         await message.channel.send("Relax.")
         return
     for x in matches:
-        lol = False
+        found = False
         card_name = x[2:-2]
         for c in cards:
             if (card_name.lower() in c.find('name').text.lower()) or (c.find('related') != None and card_name.lower() in c.find('related').text.lower()):
-                lol = True
+                found = True
                 card_file = "./TumbledMTG-Cockatrice/data/pics/CUSTOM/" + c.find('name').text + ".jpg"
                 await message.channel.send(file=discord.File(card_file))
                 if c.find('related') != None:
                     card_file = "./TumbledMTG-Cockatrice/data/pics/CUSTOM/" + c.find('related').text + ".jpg"
                     await message.channel.send(file=discord.File(card_file))
                 break
-        if lol == False:
+        if found == False:
             await message.channel.send("Could not find card " + x)
     await client.process_commands(message)
 
@@ -511,7 +513,7 @@ async def registerweekly(ctx, *, args):
                 if req.json()['error'] == "Could not find user.":
                     await ctx.send("You must create an account on https://tumbledmtg.com before you can register for a tournament.")
                 else:
-                    await ctx.send("Error getting data, please try again later.")
+                    await ctx.send("I could not get your account, either there was an error or you don't have one.")
                 return
             elif 'username' in req.json():
                 if "https://tumbledmtg.com/decklist=" in decklist:
@@ -529,17 +531,21 @@ async def registerweekly(ctx, *, args):
                         await ctx.send("Invalid decklist link.")
                         return
                 else:
-                    body = decklistRequest((str(challonge_tourney['start_at'])[0:10] + " Weekly Decklist"),
-                                        str(ctx.author).split("#")[0], decklist, str(ctx.author.id)).__dict__
-                    r = requests.post('https://us-central1-tumbledmtg-website.cloudfunctions.net/api/testdecklist',
-                                    json=body)
-                    if 'errors' in r.json():
-                        await ctx.send("Invalid decklist: " + str(r.json()['errors']))
-                        return
-                    elif 'success' in r.json():
-                        await ctx.send("Decklist is valid!")
-                    else:
-                        await ctx.send("Server error, I think... you have not been registered, try again maybe? If this happens more than once then call for help.")
+                    try:
+                        body = decklistRequest((str(challonge_tourney['start_at'])[0:10] + " Weekly Decklist"),
+                                            str(ctx.author).split("#")[0], decklist, str(ctx.author.id)).__dict__
+                        r = requests.post('https://us-central1-tumbledmtg-website.cloudfunctions.net/api/testdecklist',
+                                        json=body)
+                        if 'errors' in r.json():
+                            await ctx.send("Invalid decklist: " + str(r.json()['errors'])+"\nYou can refer to the format on <https://tumbledmtg.com/tournaments>")
+                            return
+                        elif 'success' in r.json():
+                            await ctx.send("Decklist is valid!")
+                        else:
+                            await ctx.send("Server error, I think... you have not been registered, try again maybe? If this happens more than once then call for help.")
+                            return
+                    except:
+                        await ctx.send("There was an error while trying to create your decklist, please follow the format on <https://tumbledmtg.com/tournaments>")
                         return
                 try:
                     for player in tourney['players']:
@@ -699,7 +705,7 @@ async def reportScores(ctx, args, tourney):
     except:
         await ctx.send("Error parsing tourney participants, most likely a challonge error, try again.")
         return
-    lol = False
+    found = False
     try:
         for match in matches:
             if match['winner_id'] != None or match['state'] != "open":
@@ -707,27 +713,27 @@ async def reportScores(ctx, args, tourney):
             if match['player1_id'] == playerid and match['player2_id'] == opponentid:
                 if player_score > opponentscore:
                     challonge.matches.update(challonge_tourney['id'], match['id'], scores_csv=score, winner_id=playerid)
-                    lol = True
+                    found = True
                     break
                 else:
                     challonge.matches.update(challonge_tourney['id'], match['id'], scores_csv=score, winner_id=opponentid)
-                    lol = True
+                    found = True
                     break
             elif match['player1_id'] == opponentid and match['player2_id'] == playerid:
                 score = score[-1] + score[1:-1] + score[0]
                 if player_score > opponentscore:
                     challonge.matches.update(challonge_tourney['id'], match['id'], scores_csv=score, winner_id=playerid)
-                    lol = True
+                    found = True
                     break
                 else:
                     challonge.matches.update(challonge_tourney['id'], match['id'], scores_csv=score, winner_id=opponentid)
-                    lol = True
+                    found = True
                     break
     except Exception as e:
         print(e)
         await ctx.send("Error updating scores, probably a challonge error. Try again, and if it happens again, call for help.")
         return
-    if not lol:
+    if not found:
         await ctx.send("Error updating scores, could not find a match between these 2 players.")
         return
     await ctx.send("Scores have successfully been submitted!")
