@@ -12,7 +12,7 @@ from random import randrange
 intents = discord.Intents.default()
 intents.members = True
 
-client = commands.Bot(command_prefix = '-', case_insensitive=True, intents=intents)
+client = commands.Bot(command_prefix = '-', case_insensitive=True, intents=intents, help_command=None)
 valid_keywords=["cmc","o","t","c","-o","power","toughness","type","-c","-t","-type","p","is"]
 value_keywords = ["cmc"]
 tournament_data = None
@@ -443,6 +443,9 @@ def clone():
     cards = dom.find('cards')
     cards = cards.findall('card')
 
+@client.command()
+async def help(ctx):
+    await ctx.send("Type {[ *cardname* ]} to display a card, [{ *search params* }] to search for a list of card names.\nCommands:\n   -registerweekly *decklist* (do this in my DMs)\n   -unregisterweekly\n   -weeklyreport *score*\n   -resetpassword *cockatricename* *newpassword* (do this in my DMs)\n   -keywords\n   -tags")
 
 @client.command()
 async def newtournament(ctx, arg):
