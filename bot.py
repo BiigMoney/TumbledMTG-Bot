@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands, tasks
-from os import path, chdir, system
+from os import path, chdir, system, environ
 from xml.etree import ElementTree
 import json
 import re
@@ -8,6 +8,11 @@ from datetime import datetime, timedelta
 import challonge
 import requests
 from random import randrange
+from dotenv import load_dotenv
+
+load_dotenv()
+
+password = environ['password']
 
 intents = discord.Intents.default()
 intents.members = True
@@ -825,11 +830,5 @@ class decklistRequest:
         self.id = id
         self.password = password
 
-with open('config.json', 'r') as file:
-    data = file.read()
-    file_dict = json.loads(data)
-    token = file_dict["token"]
-    apikey = file_dict["challongeAPIKey"]
-    password = file_dict["password"]
-challonge.set_credentials("TumbledMTG", apikey)
-client.run(token)
+challonge.set_credentials("TumbledMTG", environ['challongeAPIKey'])
+client.run(environ['token'])

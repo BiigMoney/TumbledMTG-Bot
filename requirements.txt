@@ -1,5 +1,6 @@
 discord==1.7.3
 pychallonge==1.11.3
+python-dotenv==0.21.0
 pytz==2019.3
 requests==2.26.0
 
