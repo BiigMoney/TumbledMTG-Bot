@@ -14,7 +14,7 @@ load_dotenv()
 
 password = environ['password']
 
-intents = discord.Intents.default()
+intents = discord.Intents.all()
 intents.members = True
 
 client = commands.Bot(command_prefix = '-', case_insensitive=True, intents=intents, help_command=None)
@@ -41,9 +41,9 @@ async def checkToStartWeekly():
     hour = datetime.now().hour
     minute = datetime.now().minute
     channel = client.get_channel(795075875611607060)
-    if weekday == 4 and hour == 14 and minute < 5:
+    if weekday == 4 and hour == 18 and minute < 5:
         await channel.send("Don't forget, the weekly is starting in 4 hours! DM me '-registerweekly (decklist)' to sign up, replacing (decklist) with the decklist you want to use for the tournament.")
-    elif weekday == 4 and hour == 18:
+    elif weekday == 4 and hour == 22:
         if tourney != None:
             challonge_tourney = challonge.tournaments.show(tourney['link'].rsplit('/', 1)[-1])
             if challonge_tourney['started_at'] == None:
@@ -116,7 +116,7 @@ async def checkToEndWeekly():
                 for player in tourney['players']:
                     if player['name'] == participant['name']:
                         r2 = requests.post("https://us-central1-tumbledmtg-website.cloudfunctions.net/api/tourneyResults", json={"id": str(player['id']), "participants": challonge_tourney['participants_count'], "placement": participant['final_rank'], "password": password, "url": challonge_tourney["full_challonge_url"], "decklist": player['decklist'], 'date': str(challonge_tourney['start_at'])[0:10]}) 
-            await channel.send("The weekly has finished. You can see the results and decklists at <https://tumbledmtg.com/tournament=" + str(challonge_tourney['id'] + "> <" + tournament_data['weekly']['link'] + ">"))
+            await channel.send("The weekly has finished. You can see the results and decklists at <https://tumbledmtg.com/tournament=" + str(str(challonge_tourney['id']) + "> <" + tournament_data['weekly']['link'] + ">"))
             tournament_data['weekly'] = None
             updateJSON()
             big_channel = client.get_channel(326822492222128138)
@@ -132,8 +132,8 @@ async def checkToEndWeekly():
                 tournament_data['weekly'] = Tournament(new_challonge_tourney['full_challonge_url']).__dict__
                 updateJSON()
                 await channel.send("The next weekly has been created. DM me '-registerweekly (decklist)' before Friday at 6pm PST to sign up, replacing (decklist) with the decklist you want to use for the tournament. You can find the bracket at " + new_challonge_tourney['full_challonge_url'])
-                second_channel = client.get_channel(893187384915669003)
-                await second_channel.send("""Join the TumbledMTG weekly tournament!
+  #              second_channel = client.get_channel(893187384915669003)
+                ''' await second_channel.send("""Join the TumbledMTG weekly tournament!
 Deadline to submit a decklist: Friday at 6pm (PST)
 
 It's free to enter, single elimination structure played out over a couple days with 10$ prize. :money_with_wings: 
@@ -142,7 +142,7 @@ Browse the card pool: <https://tumbledmtg.com/search>
 Grab a decklist: <https://tumbledmtg.com/decklists>
 Download the auto-updating launcher: <https://tumbledmtg.com/>
 Join the weekly: <https://tumbledmtg.com/tournaments>""")
-
+'''
         except Exception as e:
             print(e)
 
@@ -426,12 +426,16 @@ async def updatestars(ctx, decklist, stars):
 
 @client.command()
 async def deletedecklist(ctx, decklist):
+    print('running')
     if not (str(ctx.author) == "Tumbles#3232" or str(ctx.author) == "Big Money#7196"):
+        print(str(ctx.author))
         return
     decklistid = decklist.rsplit('/', 1)[-1].split("=")[1]
+    print(decklistid)
     try:
         r = requests.delete("https://us-central1-tumbledmtg-website.cloudfunctions.net/api/deldecklist/" + decklistid, headers={"password": password})
         if "success" in r.json():
+            print(r.json())
             await ctx.send("Successfully updated stars.")
         else:
             print(r.json()['error'])
@@ -805,10 +809,6 @@ async def tags(ctx):
 @client.command()
 async def keywords(ctx):
     await ctx.send("c:(colors) for colors\no:(word) for oracle text\ncmc:(sign)(value) for cmc\nt:(type) for type\npower:(sign)(value) for power\ntoughness:(sign)(value) for toughness\ncan also use - before c, o, and t to search for opposite\nany other words without a colon are searched for in card title")
-
-token = ""
-apikey = ""
-password = ""
 
 class Tournament:
     def __init__(self, link):
